@@ -13,6 +13,11 @@ from typing import Any, Optional
 
 import streamlit as st
 
+try:
+    from streamlit_autorefresh import st_autorefresh
+except ImportError:  # Local installs without requirements.txt still run, just without live ticks.
+    st_autorefresh = None
+
 
 TASK_LIMIT = 5
 STATE_FILE = Path(".streamlit_data/focus_dashboard_state.json")
@@ -268,7 +273,6 @@ def timer_remaining_seconds() -> int:
         return max(0, read_number(state.get("timerMinutes")) * 60)
     remaining = math.ceil((ends_at - datetime.now(timezone.utc)).total_seconds())
     if remaining <= 0:
-        complete_focus_session()
         return 0
     return remaining
 
@@ -326,7 +330,7 @@ def reset_timer() -> None:
 def complete_focus_session() -> None:
     state = st.session_state.app_state
     active_task = get_active_task()
-    completed_minutes = max(1, math.ceil(timer_remaining_seconds() / 60))
+    completed_minutes = read_number(state.get("timerMinutes")) or max(1, math.ceil(timer_remaining_seconds() / 60))
     started_at = state.get("activeTaskStartedAt") or state.get("timerStartedAt") or now_iso()
     finished_at = now_iso()
 
@@ -669,7 +673,14 @@ def render_tasks() -> None:
 
 def render_timer() -> None:
     state = st.session_state.app_state
+    if state.get("timerRunning") and st_autorefresh:
+        st_autorefresh(interval=1000, key="focus_timer_tick")
+
     remaining = timer_remaining_seconds()
+    if state.get("timerRunning") and remaining <= 0:
+        complete_focus_session()
+        st.rerun()
+
     active_task = get_active_task()
     caption = f"Working on: {active_task['text']}" if active_task else "No active task selected"
 
@@ -691,7 +702,13 @@ def render_timer() -> None:
             add_timer_minutes(minutes)
             st.rerun()
 
-    custom_minutes = st.number_input("Set timer minutes", min_value=0, step=1, value=math.ceil(remaining / 60))
+    custom_minutes = st.number_input(
+        "Set timer minutes",
+        min_value=0,
+        step=1,
+        value=math.ceil(remaining / 60),
+        disabled=state.get("timerRunning", False),
+    )
     if st.button("Apply minutes", use_container_width=True):
         previous = math.ceil(remaining / 60)
         set_timer_minutes(custom_minutes)
@@ -718,7 +735,10 @@ def render_timer() -> None:
         st.rerun()
 
     if state.get("timerRunning"):
-        st.caption("Timer is running. Streamlit refreshes the display when the app reruns; use Refresh timer for a live check.")
+        if st_autorefresh:
+            st.caption("Timer is running.")
+        else:
+            st.caption("Timer is running. Install requirements.txt dependencies to enable live ticking.")
         if st.button("Refresh timer", use_container_width=True):
             st.rerun()
 
