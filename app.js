@@ -1,5 +1,6 @@
 const STORAGE_KEY = "focus-dashboard-state-v1";
 const TASK_LIMIT = 5;
+const NOTIFICATION_THRESHOLDS_SECONDS = [5 * 60, 60];
 
 const todayKey = getDateKey(new Date());
 
@@ -28,10 +29,9 @@ ensureTodayRecord();
 
 let timerSeconds = Math.max(0, Number(state.timerMinutes) || 0) * 60;
 let timerId = null;
+let notifiedThresholds = new Set();
 
 const todayLabel = document.querySelector("#todayLabel");
-const focusInput = document.querySelector("#focusInput");
-const doneCount = document.querySelector("#doneCount");
 const taskForm = document.querySelector("#taskForm");
 const taskInput = document.querySelector("#taskInput");
 const addTaskButton = document.querySelector("#addTaskButton");
@@ -68,18 +68,11 @@ todayLabel.textContent = new Intl.DateTimeFormat("en", {
   day: "numeric"
 }).format(new Date());
 
-focusInput.value = state.focus;
 notesInput.value = state.notes;
 
 syncTodayRecord();
 render();
 updateTimerDisplay();
-
-focusInput.addEventListener("input", () => {
-  state.focus = focusInput.value.trimStart();
-  saveStateSoon();
-  renderHistory();
-});
 
 notesInput.addEventListener("input", () => {
   state.notes = notesInput.value;
@@ -165,12 +158,12 @@ resetDayButton.addEventListener("click", () => {
   state.notes = "";
   state.focus = "";
   clearActiveTask();
-  focusInput.value = "";
   notesInput.value = "";
   state.dailyRecords[todayKey] = createDailyRecord(todayKey);
   stopTimer();
   state.timerMinutes = 0;
   timerSeconds = 0;
+  resetTimerNotifications();
   updateTimerDisplay();
   saveStateSoon();
   render();
@@ -181,6 +174,7 @@ timerTabs.forEach((button) => {
     const addedMinutes = Number(button.dataset.minutes);
     state.timerMinutes += addedMinutes;
     timerSeconds += addedMinutes * 60;
+    resetTimerNotifications();
     addFocusPlanned(addedMinutes);
     saveStateSoon();
     renderTimerTabs();
@@ -226,12 +220,14 @@ startPauseButton.addEventListener("click", () => {
     return;
   }
 
+  requestNotificationPermission();
   ensureCurrentTimerIsPlanned();
   beginActiveTaskTimer();
   startPauseButton.textContent = "Pause";
   timerId = window.setInterval(() => {
     timerSeconds -= 1;
     updateTimerDisplay();
+    notifyTimerThreshold();
 
     if (timerSeconds <= 0) {
       completeFocusSession();
@@ -250,6 +246,7 @@ resetTimerButton.addEventListener("click", () => {
   stopTimer();
   state.timerMinutes = 0;
   timerSeconds = 0;
+  resetTimerNotifications();
   saveStateSoon();
   updateTimerDisplay();
 });
@@ -329,6 +326,7 @@ function completeFocusSession() {
   stopTimer();
   state.timerMinutes = 0;
   timerSeconds = 0;
+  resetTimerNotifications();
   clearActiveTask();
   saveStateSoon();
   render();
@@ -453,7 +451,6 @@ function render() {
   renderTimerTabs();
   renderTaskInputState();
   renderHistory();
-  doneCount.textContent = String(state.doneLog.length);
 }
 
 function renderTasks() {
@@ -641,12 +638,40 @@ function updateTimerDisplay() {
   completeTimerButton.disabled = timerSeconds <= 0;
 }
 
+function requestNotificationPermission() {
+  if (!("Notification" in window) || Notification.permission !== "default") return;
+
+  Notification.requestPermission();
+}
+
+function notifyTimerThreshold() {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  if (!NOTIFICATION_THRESHOLDS_SECONDS.includes(timerSeconds)) return;
+  if (notifiedThresholds.has(timerSeconds)) return;
+
+  notifiedThresholds.add(timerSeconds);
+  const minutesLeft = Math.ceil(timerSeconds / 60);
+  const activeTask = state.tasks.find((task) => task.id === state.activeTaskId);
+  const taskText = activeTask ? ` for ${activeTask.text}` : "";
+
+  new Notification("Focus timer", {
+    body: `${minutesLeft} minute${minutesLeft === 1 ? "" : "s"} left${taskText}.`,
+    tag: `focus-timer-${timerSeconds}`,
+    renotify: true
+  });
+}
+
+function resetTimerNotifications() {
+  notifiedThresholds = new Set();
+}
+
 function applyTypedTimerValue() {
   const previousMinutes = Math.ceil(timerSeconds / 60);
   const seconds = parseTimerInput(timerDisplay.value);
   const newMinutes = Math.ceil(seconds / 60);
   timerSeconds = seconds;
   state.timerMinutes = newMinutes;
+  resetTimerNotifications();
 
   if (newMinutes > previousMinutes) {
     addFocusPlanned(newMinutes - previousMinutes);

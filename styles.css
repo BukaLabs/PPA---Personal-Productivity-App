@@ -60,8 +60,7 @@ input:disabled,
 .topbar,
 .panel-heading,
 .timer-actions,
-.history-actions,
-.hero-panel {
+.history-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -89,7 +88,6 @@ input:disabled,
   text-transform: uppercase;
 }
 
-.hero-panel,
 .panel {
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(223, 230, 227, 0.9);
@@ -97,25 +95,6 @@ input:disabled,
   box-shadow: var(--shadow);
 }
 
-.hero-panel {
-  min-height: 128px;
-  padding: 24px;
-}
-
-.focus-copy {
-  flex: 1;
-  min-width: 0;
-}
-
-.focus-copy label {
-  display: block;
-  margin-bottom: 10px;
-  color: var(--muted);
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
-.focus-copy input,
 .task-form input,
 .notes-panel textarea,
 .history-form input,
@@ -128,12 +107,6 @@ input:disabled,
   color: var(--ink);
   outline: none;
   transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
-}
-
-.focus-copy input {
-  padding: 14px 16px;
-  font-size: 1.3rem;
-  font-weight: 700;
 }
 
 .task-form input {
@@ -161,7 +134,6 @@ input:disabled,
   line-height: 1.45;
 }
 
-.focus-copy input:focus,
 .task-form input:focus,
 .notes-panel textarea:focus,
 .history-form input:focus,
@@ -170,32 +142,6 @@ input:disabled,
   border-color: rgba(31, 122, 100, 0.65);
   background: #ffffff;
   box-shadow: 0 0 0 4px rgba(31, 122, 100, 0.12);
-}
-
-.focus-meter {
-  display: grid;
-  place-items: center;
-  width: 112px;
-  height: 112px;
-  border-radius: 50%;
-  border: 8px solid rgba(31, 122, 100, 0.16);
-  background: #ffffff;
-  flex: 0 0 auto;
-}
-
-.focus-meter span {
-  color: var(--accent-dark);
-  font-size: 2.1rem;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.focus-meter small {
-  margin-top: -18px;
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
 }
 
 .dashboard-grid {
@@ -573,8 +519,7 @@ input:disabled,
     padding: 14px 0;
   }
 
-  .topbar,
-  .hero-panel {
+  .topbar {
     align-items: stretch;
     flex-direction: column;
   }
@@ -583,16 +528,8 @@ input:disabled,
     font-size: 2.35rem;
   }
 
-  .hero-panel,
   .panel {
     padding: 16px;
-  }
-
-  .focus-meter {
-    width: 100%;
-    height: auto;
-    min-height: 86px;
-    border-radius: 8px;
   }
 
   .task-form,
