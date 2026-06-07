@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Focus Dashboard</title>
+    <link rel="stylesheet" href="styles.css?v=top5" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow" id="todayLabel">Today</p>
+            <h1>Focus Dashboard</h1>
+          </div>
+          <button class="ghost-button" id="resetDayButton" type="button" title="Clear completed items and reset today's session">
+            Reset day
+          </button>
+        </header>
+
+        <section class="hero-panel" aria-label="Current focus">
+          <div class="focus-copy">
+            <label for="focusInput">Today's main focus</label>
+            <input id="focusInput" type="text" maxlength="90" placeholder="Choose the thing that matters most" />
+          </div>
+          <div class="focus-meter">
+            <span id="doneCount">0</span>
+            <small>completed</small>
+          </div>
+        </section>
+
+        <div class="dashboard-grid">
+          <section class="panel tasks-panel" aria-labelledby="taskHeading">
+            <div class="panel-heading">
+              <div>
+                <p class="section-kicker">Priority lane</p>
+                <h2 id="taskHeading">Top 5 Tasks</h2>
+              </div>
+              <button class="icon-button" id="clearTasksButton" type="button" title="Clear all tasks" aria-label="Clear all tasks">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 7h16" />
+                  <path d="M10 11v6" />
+                  <path d="M14 11v6" />
+                  <path d="M5 7l1 14h12l1-14" />
+                  <path d="M9 7V4h6v3" />
+                </svg>
+              </button>
+            </div>
+            <form class="task-form" id="taskForm">
+              <input id="taskInput" type="text" maxlength="80" placeholder="Add a task" aria-label="Add a task" />
+              <button class="primary-button" id="addTaskButton" type="submit">Add</button>
+            </form>
+            <ul class="task-list" id="taskList"></ul>
+          </section>
+
+          <section class="panel timer-panel" aria-labelledby="timerHeading">
+            <div class="panel-heading">
+              <div>
+                <p class="section-kicker">Deep work</p>
+                <h2 id="timerHeading">Focus Timer</h2>
+              </div>
+              <div class="timer-tabs" role="group" aria-label="Add timer minutes">
+                <button type="button" data-minutes="20" class="timer-tab">20</button>
+                <button type="button" data-minutes="15" class="timer-tab">15</button>
+                <button type="button" data-minutes="10" class="timer-tab">10</button>
+                <button type="button" data-minutes="5" class="timer-tab">5</button>
+              </div>
+            </div>
+            <div class="timer-face" aria-live="polite">
+              <input id="timerDisplay" type="text" inputmode="numeric" aria-label="Focus timer time" value="20:00" />
+            </div>
+            <p class="active-task-label" id="activeTaskLabel">No active task selected</p>
+            <div class="timer-actions">
+              <button class="primary-button" id="startPauseButton" type="button">Start</button>
+              <button class="secondary-button" id="completeTimerButton" type="button">Complete</button>
+              <button class="secondary-button" id="resetTimerButton" type="button">Reset</button>
+            </div>
+          </section>
+
+          <section class="panel notes-panel" aria-labelledby="notesHeading">
+            <div class="panel-heading">
+              <div>
+                <p class="section-kicker">Capture</p>
+                <h2 id="notesHeading">Quick Notes</h2>
+              </div>
+              <span class="save-state" id="saveState">Saved</span>
+            </div>
+            <textarea id="notesInput" rows="9" placeholder="Park loose thoughts here so they stop tugging at you."></textarea>
+          </section>
+
+          <section class="panel done-panel" aria-labelledby="doneHeading">
+            <div class="panel-heading">
+              <div>
+                <p class="section-kicker">Momentum</p>
+                <h2 id="doneHeading">Done Log</h2>
+              </div>
+              <button class="icon-button" id="clearDoneButton" type="button" title="Clear done log" aria-label="Clear done log">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+            </div>
+            <ul class="done-list" id="doneList"></ul>
+          </section>
+        </div>
+
+        <section class="panel history-panel" aria-labelledby="historyHeading">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">Dataset</p>
+              <h2 id="historyHeading">Daily History</h2>
+            </div>
+            <div class="history-actions">
+              <select id="historyDateSelect" aria-label="History date"></select>
+              <button class="secondary-button" id="exportCsvButton" type="button">Export CSV</button>
+            </div>
+          </div>
+          <div class="history-summary" id="historySummary"></div>
+          <form class="history-form" id="historyForm">
+            <label>
+              <span>Main focus</span>
+              <input id="historyMainFocus" type="text" />
+            </label>
+            <label>
+              <span>Planned tasks</span>
+              <textarea id="historyPlannedTasks" rows="5"></textarea>
+            </label>
+            <label>
+              <span>Completed tasks</span>
+              <textarea id="historyCompletedTasks" rows="5"></textarea>
+            </label>
+            <label>
+              <span>Done log items</span>
+              <textarea id="historyDoneItems" rows="5"></textarea>
+            </label>
+            <label>
+              <span>Task time entries</span>
+              <textarea id="historyTaskTimes" rows="5"></textarea>
+            </label>
+            <label>
+              <span>Focus minutes planned</span>
+              <input id="historyFocusPlanned" type="number" min="0" step="1" />
+            </label>
+            <label>
+              <span>Focus minutes completed</span>
+              <input id="historyFocusCompleted" type="number" min="0" step="1" />
+            </label>
+            <label>
+              <span>Focus sessions completed</span>
+              <input id="historyFocusSessions" type="number" min="0" step="1" />
+            </label>
+            <label>
+              <span>Notes character count</span>
+              <input id="historyNotesCount" type="number" min="0" step="1" />
+            </label>
+            <button class="primary-button" type="submit">Save History</button>
+          </form>
+        </section>
+      </section>
+    </main>
+    <script src="app.js?v=top5"></script>
+  </body>
+</html>
