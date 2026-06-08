@@ -4,20 +4,67 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Focus Dashboard</title>
-    <link rel="stylesheet" href="styles.css?v=top5" />
+    <link rel="stylesheet" href="styles.css?v=apple-prototype" />
   </head>
   <body>
     <main class="app-shell">
+      <aside class="sidebar" aria-label="Workspace overview">
+        <div class="window-controls" aria-hidden="true">
+          <span class="control close"></span>
+          <span class="control minimize"></span>
+          <span class="control zoom"></span>
+        </div>
+        <div class="brand-lockup">
+          <span class="brand-mark" aria-hidden="true">F</span>
+          <div>
+            <p class="eyebrow">Personal OS</p>
+            <h1>Focus Dashboard</h1>
+          </div>
+        </div>
+        <nav class="sidebar-nav" aria-label="Dashboard sections">
+          <a href="#taskHeading" class="nav-item active">Today</a>
+          <a href="#timerHeading" class="nav-item">Focus</a>
+          <a href="#notesHeading" class="nav-item">Notes</a>
+          <a href="#historyHeading" class="nav-item">History</a>
+        </nav>
+        <div class="sidebar-footer">
+          <p class="section-kicker">Session</p>
+          <p class="sidebar-note">Keep the day small, visible, and calm.</p>
+        </div>
+      </aside>
+
       <section class="workspace">
         <header class="topbar">
           <div>
             <p class="eyebrow" id="todayLabel">Today</p>
-            <h1>Focus Dashboard</h1>
+            <h2>Command Center</h2>
           </div>
           <button class="ghost-button" id="resetDayButton" type="button" title="Clear completed items and reset today's session">
             Reset day
           </button>
         </header>
+
+        <section class="hero-panel" aria-label="Daily dashboard summary">
+          <div class="hero-copy">
+            <p class="section-kicker">Today</p>
+            <h2>Ready when you are.</h2>
+            <p>Choose one task, set a short timer, and keep the day moving.</p>
+          </div>
+          <div class="hero-metrics">
+            <div>
+              <span>Priority slots</span>
+              <strong>5</strong>
+            </div>
+            <div>
+              <span>Focus block</span>
+              <strong>20m</strong>
+            </div>
+            <div>
+              <span>Sync</span>
+              <strong id="saveState">Saved</strong>
+            </div>
+          </div>
+        </section>
 
         <div class="dashboard-grid">
           <section class="panel tasks-panel" aria-labelledby="taskHeading">
@@ -73,7 +120,6 @@
                 <p class="section-kicker">Capture</p>
                 <h2 id="notesHeading">Quick Notes</h2>
               </div>
-              <span class="save-state" id="saveState">Saved</span>
             </div>
             <textarea id="notesInput" rows="9" placeholder="Park loose thoughts here so they stop tugging at you."></textarea>
           </section>
@@ -149,6 +195,6 @@
         </section>
       </section>
     </main>
-    <script src="app.js?v=top5"></script>
+    <script src="app.js?v=apple-prototype"></script>
   </body>
 </html>

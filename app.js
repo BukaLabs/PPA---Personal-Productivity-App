@@ -30,6 +30,7 @@ ensureTodayRecord();
 let timerSeconds = Math.max(0, Number(state.timerMinutes) || 0) * 60;
 let timerId = null;
 let notifiedThresholds = new Set();
+let taskDrag = null;
 
 const todayLabel = document.querySelector("#todayLabel");
 const taskForm = document.querySelector("#taskForm");
@@ -126,6 +127,71 @@ taskList.addEventListener("click", (event) => {
     saveStateSoon();
     render();
   }
+});
+
+taskList.addEventListener("pointerdown", (event) => {
+  if (event.button !== 0) return;
+  if (event.target.closest("button, input, select, textarea")) return;
+
+  const item = event.target.closest("[data-task-id]");
+  if (!item) return;
+
+  taskDrag = {
+    id: item.dataset.taskId,
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    active: false
+  };
+  item.setPointerCapture(event.pointerId);
+});
+
+taskList.addEventListener("pointermove", (event) => {
+  if (!taskDrag || taskDrag.pointerId !== event.pointerId) return;
+
+  const draggedItem = taskList.querySelector(`[data-task-id="${taskDrag.id}"]`);
+  if (!draggedItem) return;
+
+  const movedDistance = Math.hypot(event.clientX - taskDrag.startX, event.clientY - taskDrag.startY);
+  if (!taskDrag.active && movedDistance < 8) return;
+
+  taskDrag.active = true;
+  draggedItem.classList.add("dragging");
+
+  const item = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-task-id]");
+  if (!item || item === draggedItem) {
+    clearDropTargets({ keepDragging: true });
+    return;
+  }
+
+  const position = getDropPosition(item, event.clientY);
+  clearDropTargets({ keepDragging: true });
+  item.classList.add(position === "before" ? "drop-before" : "drop-after");
+  item.dataset.dropPosition = position;
+});
+
+taskList.addEventListener("pointerup", (event) => {
+  if (!taskDrag || taskDrag.pointerId !== event.pointerId) return;
+
+  const item = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-task-id]");
+  if (taskDrag.active && item && item.dataset.taskId !== taskDrag.id) {
+    reorderTask(taskDrag.id, item.dataset.taskId, item.dataset.dropPosition || getDropPosition(item, event.clientY));
+  }
+
+  taskDrag = null;
+  clearDropTargets();
+});
+
+taskList.addEventListener("pointercancel", () => {
+  taskDrag = null;
+  clearDropTargets();
+});
+
+window.addEventListener("pointerup", () => {
+  if (!taskDrag) return;
+
+  taskDrag = null;
+  clearDropTargets();
 });
 
 clearTasksButton.addEventListener("click", () => {
@@ -288,7 +354,7 @@ function restoreDoneItem(doneId) {
 
   const doneItem = state.doneLog.find((entry) => entry.id === doneId);
   if (!doneItem) return;
-  if (doneItem.type === "focus" || doneItem.text.includes("minute focus session")) return;
+  if (!isRestorableDoneItem(doneItem)) return;
 
   state.doneLog = state.doneLog.filter((entry) => entry.id !== doneId);
   removeCompletedTask(doneItem.text);
@@ -303,6 +369,10 @@ function restoreDoneItem(doneId) {
   state.activeTaskId ||= restoredTask.id;
   saveStateSoon();
   render();
+}
+
+function isRestorableDoneItem(entry) {
+  return entry.type === "task" || !entry.text.includes("minute focus session");
 }
 
 function completeFocusSession() {
@@ -402,6 +472,35 @@ function moveTask(taskId, direction) {
   render();
 }
 
+function reorderTask(taskId, targetTaskId, position) {
+  const fromIndex = state.tasks.findIndex((task) => task.id === taskId);
+  const targetIndex = state.tasks.findIndex((task) => task.id === targetTaskId);
+
+  if (fromIndex < 0 || targetIndex < 0 || taskId === targetTaskId) return;
+
+  const [task] = state.tasks.splice(fromIndex, 1);
+  const adjustedTargetIndex = state.tasks.findIndex((entry) => entry.id === targetTaskId);
+  const insertIndex = position === "after" ? adjustedTargetIndex + 1 : adjustedTargetIndex;
+  state.tasks.splice(insertIndex, 0, task);
+  saveStateSoon();
+  render();
+}
+
+function getDropPosition(item, clientY) {
+  const rect = item.getBoundingClientRect();
+  return clientY - rect.top > rect.height / 2 ? "after" : "before";
+}
+
+function clearDropTargets(options = {}) {
+  taskList.querySelectorAll(".dragging, .drop-before, .drop-after").forEach((item) => {
+    item.classList.remove("drop-before", "drop-after");
+    if (!options.keepDragging) {
+      item.classList.remove("dragging");
+    }
+    delete item.dataset.dropPosition;
+  });
+}
+
 function addPlannedTask(text) {
   const record = getTodayRecord();
   record.plannedTaskNames.push(text);
@@ -493,9 +592,9 @@ function renderTasks() {
     checkbox.id = `task-${task.id}`;
     checkbox.ariaLabel = `Complete ${task.text}`;
 
-    const label = document.createElement("label");
-    label.htmlFor = checkbox.id;
-    label.textContent = task.text;
+    const text = document.createElement("span");
+    text.className = "task-text";
+    text.textContent = task.text;
 
     const selectButton = document.createElement("button");
     selectButton.className = "mini-button";
@@ -509,7 +608,7 @@ function renderTasks() {
     removeButton.dataset.removeTask = "true";
     removeButton.textContent = "Remove";
 
-    item.append(orderControls, checkbox, label, selectButton, removeButton);
+    item.append(orderControls, checkbox, text, selectButton, removeButton);
     taskList.append(item);
   });
 }
@@ -525,8 +624,7 @@ function renderDoneLog() {
   state.doneLog.slice(0, 8).forEach((entry) => {
     const item = document.createElement("li");
     item.className = "done-item";
-    const isTaskCompletion = entry.type === "task" || !entry.text.includes("minute focus session");
-    const restoreDisabled = state.tasks.length >= TASK_LIMIT || !isTaskCompletion;
+    const restoreDisabled = state.tasks.length >= TASK_LIMIT || !isRestorableDoneItem(entry);
 
     const restoreButton = document.createElement("button");
     restoreButton.className = "done-restore-button";

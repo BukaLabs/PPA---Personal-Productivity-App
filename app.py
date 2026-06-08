@@ -410,7 +410,7 @@ def restore_done_item(done_id: str) -> None:
     if len(state["tasks"]) >= TASK_LIMIT:
         return
     item = next((entry for entry in state["doneLog"] if entry["id"] == done_id), None)
-    if not item or item.get("type") == "focus":
+    if not item or not is_restorable_done_item(item):
         return
     state["doneLog"] = [entry for entry in state["doneLog"] if entry["id"] != done_id]
     remove_completed_task(item["text"])
@@ -420,6 +420,10 @@ def restore_done_item(done_id: str) -> None:
     state["tasks"].append(restored)
     state["activeTaskId"] = state["activeTaskId"] or restored["id"]
     save_disk_state()
+
+
+def is_restorable_done_item(entry: dict[str, Any]) -> bool:
+    return entry.get("type") == "task" or "minute focus session" not in entry.get("text", "")
 
 
 def move_task(task_id: str, direction: int) -> None:
@@ -766,16 +770,15 @@ def render_done_log() -> None:
     if not state["doneLog"]:
         st.info("Completed work will land here.")
     for entry in state["doneLog"][:8]:
-        cols = st.columns([0.72, 0.14, 0.14])
+        cols = st.columns([0.84, 0.16])
         text = entry["text"]
         if entry.get("startedAt") and entry.get("finishedAt"):
             text = f"{text} ({format_time(entry['startedAt'])}-{format_time(entry['finishedAt'])})"
-        cols[0].markdown(f"<span class='task-text'>{text}</span>", unsafe_allow_html=True)
-        cols[1].caption(format_time(entry.get("completedAt", "")))
-        disabled = len(state["tasks"]) >= TASK_LIMIT or entry.get("type") == "focus"
-        if cols[2].button("Restore", key=f"restore_{entry['id']}", disabled=disabled):
+        can_restore = len(state["tasks"]) < TASK_LIMIT and is_restorable_done_item(entry)
+        if cols[0].button(text, key=f"restore_{entry['id']}", disabled=not can_restore, use_container_width=True):
             restore_done_item(entry["id"])
             st.rerun()
+        cols[1].caption(format_time(entry.get("completedAt", "")))
 
     if st.button("Clear done log", use_container_width=True):
         record = today_record()
